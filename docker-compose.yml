@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  kong:
+    image: kong:3.4
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    volumes:
+      - ./kong.yml:/usr/local/kong/declarative/kong.yml
+
+  pyecho:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PYECHO_MODE: map
+      PYECHO_STATIC_MAP: "200:9000,503:9001,echo:9002,path:9003"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+      - "9002:9002"
+      - "9003:9003"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:9003/healthz"]
+      interval: 10s
+      retries: 3
+      timeout: 3s
